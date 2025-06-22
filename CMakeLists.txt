@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.14)
-project(SDL_learning LANGUAGES C)
+project(SDL_learning LANGUAGES CXX)
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
@@ -17,10 +17,10 @@ FetchContent_Declare(
 set(SDL_TEST OFF CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(SDL)
 
-add_executable(main src/main.c)
+add_executable(main src/main.cpp)
 
 target_link_libraries(main PRIVATE 
   SDL3::SDL3-shared
 )
 
-target_compile_features(main PRIVATE c_std_11)
+target_compile_features(main PRIVATE cxx_std_17)
