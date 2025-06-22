@@ -1,0 +1,8 @@
+build
+out
+.cache
+.claude
+.idea
+.vs
+.vscode
+compile_commands.json
