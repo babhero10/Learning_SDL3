@@ -36,7 +36,7 @@ FetchContent_MakeAvailable(SDL_image)
 file(GLOB UTILS_SOURCES "${SOURCE_ROOT_DIR}/utils/source/*.cpp")
 
 add_executable(main
-    src/main.cpp
+    src/main_hello.cpp
     ${UTILS_SOURCES}
 )
 
