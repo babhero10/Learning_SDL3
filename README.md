@@ -20,3 +20,7 @@ cmake --build build
 ```bash
 ./build/bin/main
 ```
+
+## Special thanks. 
+Thanks for Lazy Foo' Productions for the amazing tutorials
+https://lazyfoo.net/tutorials/SDL3/index.php#Key%20Presses%20and%20Key%20States

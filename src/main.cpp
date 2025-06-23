@@ -1,49 +1,101 @@
+#include "utils/include/texture.hpp"
 #include <SDL3/SDL.h>
-#include <SDL3/SDL_init.h>
+#include <SDL3/SDL_events.h>
+#include <SDL3/SDL_keycode.h>
 #include <SDL3/SDL_main.h>
+#include <SDL3/SDL_render.h>
 #include <SDL3/SDL_surface.h>
 #include <SDL3/SDL_video.h>
-#include <string>
+#include <SDL3_image/SDL_image.h>
 
-constexpr int kScreenWidth{ 640 };
-constexpr int kScreenHeight{ 400 };
+constexpr int kScreenWidth{1200};
+constexpr int kScreenHeight{768};
+
+SDL_Window *gWindow{nullptr};
+SDL_Renderer *gRenderer{nullptr};
+LTexture gUpTexture{nullptr}, gDownTexture{nullptr},
+         gLeftTexture{nullptr},gRightTexture{nullptr};
 
 bool init();
-
 bool loadMedia();
-
 void close();
 
-SDL_Window* gWindow{ nullptr };
-
-SDL_Surface* gScreenSurface{ nullptr };
-
-SDL_Surface* gHelloWorld{ nullptr };
-
-int main(int argc, char* args[]) {
-  int exitCode{ 0 };
+int main() {
+  int exitCode{0};
 
   if (init() == false) {
     SDL_Log("Unable to initialize program!\n");
     exitCode = 1;
   } else {
     if (loadMedia() == false) {
-      SDL_Log("Unable to load meida!\n");
+      SDL_Log("Unable to load media!\n");
+      exitCode = 2;
     } else {
-      bool quite{ false };
+      bool quit{false};
 
       SDL_Event e;
       SDL_zero(e);
 
-      while (quite == false) {
+      LTexture* currentTexture = &gUpTexture;
+      SDL_Color bgColor{0xFF, 0xFF, 0xFF, 0xFF};
+
+      while (quit == false) {
         while (SDL_PollEvent(&e) == true) {
           if (e.type == SDL_EVENT_QUIT) {
-            quite = true;
+            quit = true;
+          } else if(e.type == SDL_EVENT_KEY_DOWN) {
+            if (e.key.key == SDLK_ESCAPE) {
+              quit = true;
+            }
+            if (e.key.key == SDLK_W) {
+              currentTexture = &gUpTexture;
+            } if (e.key.key == SDLK_S) {
+              currentTexture = &gDownTexture;
+            } if (e.key.key == SDLK_D) {
+              currentTexture = &gRightTexture;
+            } if (e.key.key == SDLK_A) {
+              currentTexture = &gLeftTexture;
+            }
           }
         }
-        SDL_FillSurfaceRect(gScreenSurface, nullptr, SDL_MapSurfaceRGB(gScreenSurface, 0xFF, 0xFF, 0xFF));
-        SDL_BlitSurface(gHelloWorld, nullptr, gScreenSurface, nullptr);
-        SDL_UpdateWindowSurface(gWindow);
+
+        bgColor.r = 0xFF;
+        bgColor.g = 0xFF;
+        bgColor.b = 0xFF;
+
+        const bool* keyStates = SDL_GetKeyboardState( nullptr );
+        if( keyStates[ SDL_SCANCODE_W ] == true )
+        {
+            bgColor.r = 0xFF;
+            bgColor.g = 0x00;
+            bgColor.b = 0x00;
+        }
+        else if( keyStates[ SDL_SCANCODE_S ] == true )
+        {
+            bgColor.r = 0x00;
+            bgColor.g = 0xFF;
+            bgColor.b = 0x00;
+        }
+        else if( keyStates[ SDL_SCANCODE_A ] == true )
+        {
+            bgColor.r = 0xFF;
+            bgColor.g = 0xFF;
+            bgColor.b = 0x00;
+        }
+        else if( keyStates[ SDL_SCANCODE_D ] == true )
+        {
+            bgColor.r = 0x00;
+            bgColor.g = 0x00;
+            bgColor.b = 0xFF;
+        }
+
+        SDL_SetRenderDrawColor(gRenderer, bgColor.r, bgColor.g, bgColor.b, 0xFF);
+        SDL_RenderClear(gRenderer);
+
+        currentTexture->render((kScreenWidth - currentTexture->getWidth()) * 0.5f,
+                               (kScreenHeight - currentTexture->getHeight()) * 0.5f);
+
+        SDL_RenderPresent(gRenderer);
       }
     }
   }
@@ -54,47 +106,68 @@ int main(int argc, char* args[]) {
 }
 
 bool init() {
-  bool success{ true };
+  // Initialization flag
+  bool success{true};
 
+  // Initialize SDL
   if (SDL_Init(SDL_INIT_VIDEO) == false) {
     SDL_Log("SDL could not initialize! SDL error: %s\n", SDL_GetError());
     success = false;
   } else {
-      if(gWindow = SDL_CreateWindow( "SDL3 Tutorial: Hello SDL3", kScreenWidth, kScreenHeight, 0); gWindow == nullptr ) {
-          SDL_Log( "Window could not be created! SDL error: %s\n", SDL_GetError() );
-          success = false;
-      } else {
-          gScreenSurface = SDL_GetWindowSurface( gWindow );
-      }
+    // Create window with renderer
+    if (SDL_CreateWindowAndRenderer(
+            "SDL3 Tutorial: Textures and Extension Libraries", kScreenWidth,
+            kScreenHeight, 0, &gWindow, &gRenderer) == false) {
+      SDL_Log("Window could not be created! SDL error: %s\n", SDL_GetError());
+      success = false;
+    }
   }
+
+  gUpTexture = LTexture{gRenderer};
+  gDownTexture = LTexture{gRenderer};
+  gLeftTexture = LTexture{gRenderer};
+  gRightTexture = LTexture{gRenderer};
 
   return success;
 }
 
 bool loadMedia() {
-    //File loading flag
-    bool success{ true };
+  bool success{true};
 
-    //Load splash image
-    std::string imagePath{ "src/assets/sample_640×426.bmp"};
-    if( gHelloWorld = SDL_LoadBMP( imagePath.c_str() ); gHelloWorld == nullptr ) {
-        SDL_Log("Unable to load image %s! SDL Error: %s\n", imagePath.c_str(), SDL_GetError());
-        success = false;
-    }
+  if (gUpTexture.loadFromFile("src/assets/up.png") == false) {
+    SDL_Log("Unable to load up png image!\n");
+    success = false;
+  }
 
-    return success;
+  if (gDownTexture.loadFromFile("src/assets/down.png") == false) {
+    SDL_Log("Unable to load down png image!\n");
+    success = false;
+  }
+
+  if (gLeftTexture.loadFromFile("src/assets/left.png") == false) {
+    SDL_Log("Unable to load left png image!\n");
+    success = false;
+  }
+
+  if (gRightTexture.loadFromFile("src/assets/right.png") == false) {
+    SDL_Log("Unable to load right png image!\n");
+    success = false;
+  }
+
+  return success;
 }
 
 void close() {
-    //Clean up surface
-    SDL_DestroySurface( gHelloWorld );
-    gHelloWorld = nullptr;
-    
-    //Destroy window
-    SDL_DestroyWindow( gWindow );
-    gWindow = nullptr;
-    gScreenSurface = nullptr;
+  gUpTexture.destroy();
+  gDownTexture.destroy();
+  gLeftTexture.destroy();
+  gRightTexture.destroy();
 
-    //Quit SDL subsystems
-    SDL_Quit();
+  SDL_DestroyRenderer(gRenderer);
+  gRenderer = nullptr;
+  SDL_DestroyWindow(gWindow);
+  gWindow = nullptr;
+
+  SDL_Quit();
 }
+
